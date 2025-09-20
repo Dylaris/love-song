@@ -38,6 +38,12 @@ function aris_music:pause()
     end
 end
 
+function aris_music:stop()
+    self.state = PAUSED
+    love.audio.stop(self.source)
+    self.play_duration = 0
+end
+
 function aris_music:is_playing()
     return self.state == PLAYING and true or false
 end
@@ -59,6 +65,10 @@ end
 
 function aris_music:get_ratio()
     return self.play_duration / self.total_duration
+end
+
+function aris_music:set_volume(volume)
+    self.source:setVolume(volume)
 end
 
 return aris_music

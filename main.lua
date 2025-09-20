@@ -1,29 +1,45 @@
-local aris_palette = require("palette")
+local palette = require("palette")
 local aris_music = require("music")
-local aris_player = require("player")
+local player = require("player")
 require("click")
 
 function love.load()
-    love.graphics.setBackgroundColor(aris_palette.black)
-    aris_player:add_music(aris_music.new("assets/Khalil Fong - Love Song.mp3"))
+    love.graphics.setBackgroundColor(palette.black)
+    player:add_music(aris_music.new("assets/王铮亮 - 不凡.mp3"))
+    player:add_music(aris_music.new("assets/Khalil Fong - Love Song.mp3"))
 end
 
 function love.update()
-    aris_player:update()
+    player:update()
 end
 
 function love.keypressed(key)
+    -- play/pause music
     if key == "space" then
-        if aris_player:is_playing() then
-            aris_player:pause_music()
+        if player:is_playing() then
+            player:pause_music()
         else
-            aris_player:play_music()
+            player:play_music()
         end
+    end
+
+    -- control volume
+    if key == "up" then
+        player:increse_volume()
+    elseif key == "down" then
+        player:reduce_volume()
+    end
+
+    -- play order
+    if key == "left" then
+        player:play_prev_music()
+    elseif key == "right" then
+        player:play_next_music()
     end
 end
 
 function love.draw()
-    aris_player:draw()
+    player:draw()
 end
 
 function love.mousepressed(x, y, btn, istouch)
