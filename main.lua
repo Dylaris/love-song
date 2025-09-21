@@ -1,51 +1,40 @@
-local palette = require("palette")
-local aris_music = require("music")
-local player = require("player")
-require("click")
+require("palette")
+require("winsize")
+local Player = require("player")
+local UI = require("ui")
+
+local player = Player.new()
+local ui = UI.new(player)
 
 function love.load()
-    love.graphics.setBackgroundColor(palette.black)
-    player:add_music(aris_music.new("assets/王铮亮 - 不凡.mp3"))
-    player:add_music(aris_music.new("assets/Khalil Fong - Love Song.mp3"))
+    love.graphics.setBackgroundColor(_G.palette.bg)
+    player:load_music_from_file("assets/Khalil Fong - Love Song.mp3")
+    player:load_music_from_file("assets/王铮亮 - 不凡.mp3")
+end
+
+function love.keypressed(key)
+    if key == "space" then
+        if player.playing then player:pause()
+        else player:play() end
+    end
+
+    if key == "left" then player:next()
+    elseif key == "right" then player:previous() end
+
+    if key == "up" then player:inc_volume()
+    elseif key == "down" then player:dec_volume() end
+end
+
+function love.resize(w, h)
+    _G.screen_width = w
+    _G.screen_height = h
 end
 
 function love.update()
     player:update()
-end
-
-function love.keypressed(key)
-    -- play/pause music
-    if key == "space" then
-        if player:is_playing() then
-            player:pause_music()
-        else
-            player:play_music()
-        end
-    end
-
-    -- control volume
-    if key == "up" then
-        player:increse_volume()
-    elseif key == "down" then
-        player:reduce_volume()
-    end
-
-    -- play order
-    if key == "left" then
-        player:play_prev_music()
-    elseif key == "right" then
-        player:play_next_music()
-    end
+    ui:update()
 end
 
 function love.draw()
-    player:draw()
-end
-
-function love.mousepressed(x, y, btn, istouch)
-    local layout = aris_layout_get(love.graphics.getWidth(), love.graphics.getHeight())
-    local click_type = aris_click_get(layout, x, y)
-    if click_type == _G.progress_bar_click then
-        print("click progress bar")
-    end
+    ui:draw()
 end

@@ -1,112 +1,99 @@
-local aris_palette = require("palette")
+local Player = {}
+Player.__index = Player
 
-local aris_player = {
-    playlist = {},
-    current_music_idx = 0,
-    progress_bar = require("progress_bar"),
-    volume = 0.5
-}
+function Player.new()
+    local obj = {}
+    setmetatable(obj, Player)
 
-local function get_current_music(player)
-    if #player.playlist == 0 then return end
-    return player.playlist[player.current_music_idx]
+    -- init
+    obj.playing = false
+    obj.volume = 0.5
+    obj.playlist = {}
+    obj.current_music = nil
+    obj.current_index = 1
+
+    return obj
 end
 
-function aris_player:add_music(music)
-    table.insert(self.playlist, music)
-    if self.current_music_idx == 0 then
-        self.current_music_idx = 1
+function Player:load_music_from_file(filepath)
+    if not filepath:match("%.mp3$") then return end
+    local source = love.audio.newSource(filepath, "stream")
+    table.insert(self.playlist, {
+        name = filepath:match("[^\\/]+$"),
+        path = filepath,
+        source = source,
+        duration = source:getDuration()
+    })
+end
+
+function Player:dump_playlist()
+    for _, music in ipairs(self.playlist) do
+        print(music.name, music.duration)
     end
 end
 
-function aris_player:play_music()
-    if #self.playlist == 0 then return end
+function Player:play(index)
+    if self.current_music then self.current_music:stop() end
+    index = index or self.current_index
+    if index < 1 then index = #self.playlist
+    elseif index > #self.playlist then index = 1 end
 
-    local music = get_current_music(self)
-    music:play()
+    self.current_index = index
+    self.current_music = self.playlist[self.current_index].source
+    self.current_music:setVolume(self.volume)
+    self.current_music:setLooping(false)
+    self.current_music:play()
+    self.playing = true
 end
 
-function aris_player:play_next_music()
-    if #self.playlist == 0 then return end
-
-    -- stop current music
-    local music = get_current_music(self)
-    music:stop()
-
-    -- play next music
-    self.current_music_idx = self.current_music_idx + 1
-    if self.current_music_idx > #self.playlist then
-        self.current_music_idx = 1
-    end
-    music = get_current_music(self)
-    music:play()
-end
-
-function aris_player:play_prev_music()
-    if #self.playlist == 0 then return end
-
-    -- stop current music
-    local music = get_current_music(self)
-    music:stop()
-
-    self.current_music_idx = self.current_music_idx - 1
-    if self.current_music_idx < 1 then
-        self.current_music_idx = #self.playlist
-    end
-    music = get_current_music(self)
-    music:play()
-end
-
-function aris_player:pause_music()
-    if #self.playlist == 0 then return end
-
-    local music = get_current_music(self)
-    music:pause()
-end
-
-function aris_player:draw()
-    if #self.playlist == 0 then return end
-
-    local music = get_current_music(self)
-    self.progress_bar:draw(music:get_ratio())
-end
-
-function aris_player:update()
-    if #self.playlist == 0 then return end
-
-    local music = get_current_music(self)
-    music:update()
-    if music:is_finished() then
-        self:play_next_music() -- auto play next music
+function Player:pause()
+    if self.current_music then
+        self.current_music:pause()
+        self.playing = false
     end
 end
 
-function aris_player:is_playing()
-    if #self.playlist == 0 then return end
-
-    local music = get_current_music(self)
-    return music:is_playing()
+function Player:resume()
+    if self.current_music and not self.playing then
+        self.current_music:play()
+        self.playing = true
+    end
 end
 
-function aris_player:is_paused()
-    if #self.playlist == 0 then return end
-
-    local music = get_current_music(self)
-    return music:is_paused()
+function Player:stop()
+    if self.current_music then
+        self.current_music:stop()
+        self.playing = false
+    end
 end
 
-function aris_player:increse_volume()
-    self.volume = self.volume + 0.1
-    if self.volume > 1 then self.volume = 1 end
-    local music = get_current_music(self)
-    music:set_volume(self.volume)
+function Player:next()
+    self:play(self.current_index + 1)
 end
 
-function aris_player:reduce_volume()
-    self.volume = self.volume - 0.1
-    if self.volume < 0 then self.volume = 0 end
-    local music = get_current_music(self)
-    music:set_volume(self.volume)
+function Player:previous()
+    self:play(self.current_index - 1)
 end
 
-return aris_player
+function Player:set_volume(vol)
+    self.volume = math.max(0, math.min(1, vol))
+    if self.current_music then
+        self.current_music:setVolume(self.volume)
+    end
+end
+
+function Player:inc_volume()
+    self:set_volume(self.volume + 0.1)
+end
+
+function Player:dec_volume()
+    self:set_volume(self.volume - 0.1)
+end
+
+function Player:update()
+    if self.playing and self.music and not self.music:isPlaying() then
+        self:next()
+    end
+end
+
+return Player
